@@ -1,0 +1,15 @@
+# Frontend
+frontend/node_modules
+frontend/dist
+frontend/.env
+
+# Backend
+medimind-backend/target
+medimind-backend/.idea
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
