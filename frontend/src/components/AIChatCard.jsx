@@ -1,8 +1,11 @@
+import axios from "axios"
 import { motion } from "framer-motion"
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 export default function AIChatCard() {
 
+    const messagesContainerRef = useRef(null)
     const [message, setMessage] = useState("")
+    const [isTyping, setIsTyping] = useState(false)
 
     const [messages, setMessages] = useState([
         {
@@ -12,45 +15,168 @@ export default function AIChatCard() {
         }
     ])
 
-    const handleSendMessage = () => {
+    const handleSendMessage = async () => {
 
         if (!message.trim()) return
 
-        const newMessage = {
+        const userMessage = {
             id: Date.now(),
             sender: "user",
             text: message
         }
 
-        setMessages((prev) => [...prev, newMessage])
+        setMessages((prev) => [...prev, userMessage])
+
+        const userText = message
 
         setMessage("")
+
+        setIsTyping(true)
+
+        try {
+
+            const response = await axios.post(
+                "http://localhost:8080/api/ai/chat",
+                {
+                    message: userText
+                }
+            )
+
+            const aiMessage = {
+                id: Date.now() + 1,
+                sender: "ai",
+                text: response.data
+            }
+
+            setMessages((prev) => [...prev, aiMessage])
+
+        } catch (error) {
+
+            console.log(error)
+
+            const errorMessage = {
+                id: Date.now() + 2,
+                sender: "ai",
+                text: "AI service unavailable."
+            }
+
+            setMessages((prev) => [...prev, errorMessage])
+        }
+
+        setIsTyping(false)
     }
 
+
+    useEffect(() => {
+
+        const container = messagesContainerRef.current
+
+        if (container) {
+
+            container.scrollTo({
+                top: container.scrollHeight,
+                behavior: "smooth"
+            })
+
+        }
+    }, [messages, isTyping])
     return (
-        <div className="bg-[#27345F] rounded-3xl p-8 shadow-lg mt-10">
+
+        <motion.div
+
+            initial={{
+                opacity: 0,
+                y: 40,
+                scale: 0.95
+            }}
+
+            animate={{
+                opacity: 1,
+                y: 0,
+                scale: 1
+            }}
+
+            transition={{
+                duration: 0.6
+            }}
+
+            className="
+            bg-[#27345F]/80
+            backdrop-blur-xl
+            rounded-3xl
+            p-8
+            shadow-[0_0_40px_rgba(34,211,238,0.15)]
+            mt-10
+            border
+            border-cyan-400/20
+        "
+        >
 
             {/* Header */}
-            <div className="flex items-center gap-5">
+            <div className="flex items-center gap-5 relative">
 
+                {/* AI ORB */}
                 <motion.div
+
                     animate={{
-                        scale: [1, 1.1, 1]
+                        y: [0, -10, 0],
+                        rotate: [0, 5, -5, 0]
                     }}
+
                     transition={{
-                        duration: 2,
-                        repeat: Number.POSITIVE_INFINITY
+                        duration: 4,
+                        repeat: Infinity
                     }}
-                    className="w-16 h-16 rounded-full bg-cyan-400 shadow-[0_0_40px_#22d3ee]"
-                ></motion.div>
+
+                    className="
+            relative
+            w-20
+            h-20
+            rounded-full
+            bg-gradient-to-r
+            from-cyan-400
+            via-blue-500
+            to-purple-500
+            shadow-[0_0_60px_rgba(34,211,238,0.8)]
+            flex
+            items-center
+            justify-center
+        "
+                >
+
+                    {/* INNER GLOW */}
+                    <div
+                        className="
+                absolute
+                w-10
+                h-10
+                rounded-full
+                bg-white/40
+                blur-xl
+            "
+                    ></div>
+
+                    {/* CENTER DOT */}
+                    <div
+                        className="
+                w-5
+                h-5
+                rounded-full
+                bg-white
+            "
+                    ></div>
+
+                </motion.div>
+
+                {/* TEXT */}
                 <div>
 
                     <h2 className="text-4xl font-bold text-white">
                         MediMind AI Assistant
                     </h2>
 
-                    <p className="text-gray-300 mt-1">
-                        Online • Ready to help
+                    <p className="text-cyan-300 mt-1">
+                        Online • Smart Healthcare Support
                     </p>
 
                 </div>
@@ -58,35 +184,121 @@ export default function AIChatCard() {
             </div>
 
             {/* Messages */}
-            <div className="mt-8 flex flex-col gap-4">
+            <div
+
+                ref={messagesContainerRef}
+                className="
+    mt-8
+    flex
+    flex-col
+    gap-4
+    max-h-[400px]
+    overflow-y-auto
+    pr-2
+     scroll-smooth
+"
+            >
 
                 {
                     messages.map((msg) => (
 
-                        <div
+                        <motion.div
                             key={msg.id}
+
+                            initial={{
+                                opacity: 0,
+                                y: 20
+                            }}
+
+                            animate={{
+                                opacity: 1,
+                                y: 0
+                            }}
+
+                            transition={{
+                                duration: 0.3
+                            }}
+
                             className={`
-                max-w-[80%]
-                px-6
-                py-4
-                rounded-2xl
-                text-white
-                text-lg
-                ${msg.sender === "ai"
+        max-w-[80%]
+        px-6
+        py-4
+        rounded-2xl
+        text-white
+        text-lg
+        ${msg.sender === "ai"
                                     ? "bg-[#1F5F8B]"
                                     : "bg-blue-600 self-end"
                                 }
-              `}
+    `}
                         >
 
                             {msg.text}
 
-                        </div>
+                        </motion.div>
 
                     ))
                 }
 
+
+
+                {
+                    isTyping && (
+
+                        <motion.div
+
+                            initial={{
+                                opacity: 0
+                            }}
+
+                            animate={{
+                                opacity: 1
+                            }}
+
+                            className="
+                bg-[#1F5F8B]
+                w-fit
+                px-5
+                py-3
+                rounded-2xl
+                text-white
+                flex
+                items-center
+                gap-2
+            "
+                        >
+
+                            <div className="w-2 h-2 bg-white rounded-full animate-bounce"></div>
+
+                            <div
+                                className="
+                    w-2
+                    h-2
+                    bg-white
+                    rounded-full
+                    animate-bounce
+                    delay-100
+                "
+                            ></div>
+
+                            <div
+                                className="
+                    w-2
+                    h-2
+                    bg-white
+                    rounded-full
+                    animate-bounce
+                    delay-200
+                "
+                            ></div>
+
+                        </motion.div>
+                    )
+                }
+
             </div>
+
+
 
             {/* Input */}
             <div className="flex gap-4 mt-8">
@@ -96,6 +308,12 @@ export default function AIChatCard() {
                     placeholder="Write a message..."
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
+
+                    onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                            handleSendMessage()
+                        }
+                    }}
                     className="
             flex-1
             px-6
@@ -104,7 +322,11 @@ export default function AIChatCard() {
             bg-[#1B2448]
             text-white
             outline-none
-            border border-gray-600
+            border border-cyan-400/20
+focus:border-cyan-400
+focus:shadow-[0_0_20px_rgba(34,211,238,0.5)]
+transition-all
+duration-300
           "
                 />
 
@@ -118,8 +340,12 @@ export default function AIChatCard() {
                     }}
                     onClick={handleSendMessage}
                     className="
-            bg-cyan-500
-            hover:bg-cyan-600
+            bg-gradient-to-r
+from-cyan-400
+to-blue-600
+hover:from-cyan-300
+hover:to-blue-500
+shadow-[0_0_20px_rgba(34,211,238,0.4)]
             transition
             text-white
             px-8
@@ -130,9 +356,8 @@ export default function AIChatCard() {
                 >
                     Send
                 </motion.button>
-
             </div>
 
-        </div>
+        </motion.div>
     )
 }
